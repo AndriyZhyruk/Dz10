@@ -1,0 +1,116 @@
+using System;
+using System.Xml;
+
+class Program
+{
+    class Order
+    {
+        public string OrderId { get; set; }
+        public string CustomerName { get; set; }
+        public Product[] Products { get; set; }
+    }
+
+    class Product
+    {
+        public string ProductId { get; set; }
+        public string ProductName { get; set; }
+        public decimal Price { get; set; }
+    }
+
+    class XmlOrderWriter
+    {
+        public void WriteOrdersToXml(Order[] orders, string filePath)
+        {
+            using (XmlTextWriter writer = new XmlTextWriter(filePath, null))
+            {
+                writer.Formatting = Formatting.Indented;
+                writer.WriteStartDocument();
+                writer.WriteStartElement("Orders");
+
+                foreach (var order in orders)
+                {
+                    writer.WriteStartElement("Order");
+                    writer.WriteElementString("OrderId", order.OrderId);
+                    writer.WriteElementString("CustomerName", order.CustomerName);
+
+                    writer.WriteStartElement("Products");
+                    foreach (var product in order.Products)
+                    {
+                        writer.WriteStartElement("Product");
+                        writer.WriteElementString("ProductId", product.ProductId);
+                        writer.WriteElementString("ProductName", product.ProductName);
+                        writer.WriteElementString("Price", product.Price.ToString("F2"));
+                        writer.WriteEndElement(); // Product
+                    }
+                    writer.WriteEndElement(); // Products
+
+                    writer.WriteEndElement(); // Order
+                }
+
+                writer.WriteEndElement(); // Orders
+                writer.WriteEndDocument();
+            }
+        }
+    }
+
+    class XmlOrderReader
+    {
+        public void ReadOrdersFromXml(string filePath)
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.Load(filePath);
+
+            XmlNodeList orderNodes = doc.SelectNodes("/Orders/Order");
+            foreach (XmlNode orderNode in orderNodes)
+            {
+                string orderId = orderNode["OrderId"].InnerText;
+                string customerName = orderNode["CustomerName"].InnerText;
+
+                Console.WriteLine($"Order ID: {orderId}, Customer Name: {customerName}");
+
+                XmlNodeList productNodes = orderNode.SelectNodes("Products/Product");
+                foreach (XmlNode productNode in productNodes)
+                {
+                    string productId = productNode["ProductId"].InnerText;
+                    string productName = productNode["ProductName"].InnerText;
+                    decimal price = decimal.Parse(productNode["Price"].InnerText);
+
+                    Console.WriteLine($"  Product ID: {productId}, Product Name: {productName}, Price: {price:F2}");
+                }
+            }
+        }
+    }
+
+    static void Main()
+    {
+        var orders = new Order[]
+        {
+            new Order
+            {
+                OrderId = "1",
+                CustomerName = "John Doe",
+                Products = new Product[]
+                {
+                    new Product { ProductId = "P001", ProductName = "Product 1", Price = 10.50m },
+                    new Product { ProductId = "P002", ProductName = "Product 2", Price = 15.75m }
+                }
+            },
+            new Order
+            {
+                OrderId = "2",
+                CustomerName = "Jane Smith",
+                Products = new Product[]
+                {
+                    new Product { ProductId = "P003", ProductName = "Product 3", Price = 7.25m }
+                }
+            }
+        };
+
+        string filePath = "orders.xml";
+        var writer = new XmlOrderWriter();
+        writer.WriteOrdersToXml(orders, filePath);
+
+        var reader = new XmlOrderReader();
+        reader.ReadOrdersFromXml(filePath);
+    }
+}
